@@ -54,9 +54,20 @@ def ask(req: AskRequest):
     used = validate_used_sources(gen.get("used_sources", []), len(sources))
 
     # Append verified citations 
-    answer_text = gen.get("answer", "")
-    if used:
-        answer_text = answer_text.rstrip() + "\n\nCitations: " + ", ".join([f"[{i}]" for i in used])
+    answer_text = gen.get("answer", "").strip()
+    # If the model says "I don't know" OR it used nothing -> return no sources
+    if (not used) or (answer_text == "I don’t know based on the provided documents."):
+        return AskResponse(
+            answer="I don’t know based on the provided documents.",
+            sources=[]
+        )
 
-    return AskResponse(answer=answer_text, sources=sources)
+    # Filter sources to only those used (keep the used order)
+    used_sources = [sources[i - 1] for i in used]
+
+    # Remap citations to [1..len(used_sources)] since we filtered the list
+    citations = ", ".join([f"[{i}]" for i in range(1, len(used_sources) + 1)])
+    answer_text = answer_text.rstrip() + f"\n\nCitations: {citations}"
+
+    return AskResponse(answer=answer_text, sources=used_sources)
 

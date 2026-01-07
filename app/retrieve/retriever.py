@@ -73,8 +73,16 @@ class Retriever:
         ids = res.get("ids", [[]])[0]
         docs = res.get("documents", [[]])[0]
         metas = res.get("metadatas", [[]])[0]
+        dists = res.get("distances", [[]])[0]
+        MAX_DISTANCE = 0.2
 
-        for cid, doc, md in zip(ids, docs, metas):
+        for cid, doc, md, dist in zip(ids, docs, metas, dists):
+            # print("\n\n")
+            print(f"Retrieved chunk_id={cid} distance={dist:.4f}")
+            # print("\n\n")
+            if dist is not None and float(dist) > MAX_DISTANCE:
+                continue
+
             title = (md.get("doc_title") if isinstance(md, dict) else "") or ""
             source = (md.get("source") if isinstance(md, dict) else "") or ""
             snippet = (doc[:300] + "...") if doc and len(doc) > 300 else (doc or "")
