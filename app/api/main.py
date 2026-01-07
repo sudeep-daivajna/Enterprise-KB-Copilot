@@ -2,7 +2,8 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import List, Optional
 
-from app.retrieve.retiever import Retriever
+from app.retrieve.retriever import Retriever
+from app.generate.answer import generate_answer_json, validate_used_sources
 
 app = FastAPI(title="Enterprise Knowledge Copilot")
 
@@ -49,7 +50,13 @@ def ask(req: AskRequest):
         for c in chunks
     ]
 
-    # Placeholder answer for now (Step 8 will generate with Groq)
-    answer = f"Retrieved {len(sources)} sources for role='{role}'. (LLM generation not wired yet.)"
+    gen = generate_answer_json(req.question, chunks)
+    used = validate_used_sources(gen.get("used_sources", []), len(sources))
 
-    return AskResponse(answer=answer, sources=sources)
+    # Append verified citations 
+    answer_text = gen.get("answer", "")
+    if used:
+        answer_text = answer_text.rstrip() + "\n\nCitations: " + ", ".join([f"[{i}]" for i in used])
+
+    return AskResponse(answer=answer_text, sources=sources)
+
