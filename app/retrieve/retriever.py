@@ -8,6 +8,8 @@ import chromadb
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
+from app.retrieve.query_rewrite import rewrite_query
+
 ROOT = Path(__file__).resolve().parents[2]
 CHROMA_DIR = ROOT / "data" / "chroma"
 COLLECTION_NAME = "enterprise_kb_copilot"
@@ -60,7 +62,9 @@ class Retriever:
         user_role: str = "public",
     ) -> List[RetrievedChunk]:
         user_level = role_to_level(user_role)
-        q_emb = self.embed_query(question)
+        
+        rewritten = rewrite_query(question)
+        q_emb = self.embed_query(rewritten)
 
         res = self.collection.query(
             query_embeddings=[q_emb],

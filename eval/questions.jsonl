@@ -19,3 +19,9 @@
 {"id":"k8s_08","role":"engineering","question":"What does 'working with objects' mean in Kubernetes?","expected_doc_ids":["k8s-objects-in-kubernetes-kubernetes"]}
 {"id":"k8s_09","role":"engineering","question":"What are object names and IDs in Kubernetes used for?","expected_doc_ids":["k8s-object-names-and-ids-kubernetes"]}
 {"id":"k8s_10","role":"engineering","question":"What is Kubernetes cluster architecture at a high level?","expected_doc_ids":["k8s-cluster-architecture-kubernetes"]}
+
+{"id":"k8s_hard_01","role":"engineering","question":"wat is k8 servce?","expected_doc_ids":["k8s-service-kubernetes"]}
+{"id":"k8s_hard_02","role":"engineering","question":"how do pods get exposed in kubernets","expected_doc_ids":["k8s-service-kubernetes"]}
+{"id":"k8s_hard_03","role":"engineering","question":"kubernets api meaning","expected_doc_ids":["k8s-the-kubernetes-api-kubernetes"]}
+{"id":"aws_hard_01","role":"public","question":"wa tool purpose","expected_doc_ids":["aws-well-architected-framework"]}
+{"id":"aws_hard_02","role":"public","question":"what does perf efficency pillar mean","expected_doc_ids":["aws-well-architected-framework"]}
