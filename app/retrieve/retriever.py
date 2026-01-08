@@ -77,9 +77,6 @@ class Retriever:
         MAX_DISTANCE = 0.2
 
         for cid, doc, md, dist in zip(ids, docs, metas, dists):
-            # print("\n\n")
-            print(f"Retrieved chunk_id={cid} distance={dist:.4f}")
-            # print("\n\n")
             if dist is not None and float(dist) > MAX_DISTANCE:
                 continue
 

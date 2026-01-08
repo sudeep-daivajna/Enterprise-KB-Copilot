@@ -1,0 +1,21 @@
+{"id":"aws_01","role":"public","question":"What are the pillars of the AWS Well-Architected Framework?","expected_doc_ids":["aws-well-architected-framework"]}
+{"id":"aws_02","role":"public","question":"What does the Operational Excellence pillar focus on?","expected_doc_ids":["aws-well-architected-framework"]}
+{"id":"aws_03","role":"public","question":"What does the Security pillar cover at a high level?","expected_doc_ids":["aws-well-architected-framework"]}
+{"id":"aws_04","role":"public","question":"What does Reliability mean in the context of the AWS Well-Architected Framework?","expected_doc_ids":["aws-well-architected-framework"]}
+{"id":"aws_05","role":"public","question":"What is Performance Efficiency in the AWS Well-Architected Framework?","expected_doc_ids":["aws-well-architected-framework"]}
+{"id":"aws_06","role":"public","question":"What is Cost Optimization in the AWS Well-Architected Framework?","expected_doc_ids":["aws-well-architected-framework"]}
+{"id":"aws_07","role":"public","question":"What is the purpose of the AWS Well-Architected Tool (AWS WA Tool)?","expected_doc_ids":["aws-well-architected-framework"]}
+{"id":"aws_08","role":"public","question":"Why does the Framework help when designing workloads in the AWS Cloud?","expected_doc_ids":["aws-well-architected-framework"]}
+{"id":"aws_09","role":"public","question":"What does Sustainability mean in the AWS Well-Architected Framework?","expected_doc_ids":["aws-well-architected-framework"]}
+{"id":"aws_10","role":"public","question":"What kinds of resources are listed as related documents or resources in the Framework?","expected_doc_ids":["aws-well-architected-framework"]}
+
+{"id":"k8s_01","role":"engineering","question":"What is Kubernetes?","expected_doc_ids":["k8s-overview-kubernetes"]}
+{"id":"k8s_02","role":"engineering","question":"What is a Kubernetes Service?","expected_doc_ids":["k8s-service-kubernetes"]}
+{"id":"k8s_03","role":"engineering","question":"Why do you need a Service in Kubernetes (what problem does it solve)?","expected_doc_ids":["k8s-service-kubernetes"]}
+{"id":"k8s_04","role":"engineering","question":"How can clients inside the cluster find a Service?","expected_doc_ids":["k8s-service-kubernetes"]}
+{"id":"k8s_05","role":"engineering","question":"What are some Kubernetes Service types used to expose a Service externally?","expected_doc_ids":["k8s-service-kubernetes"]}
+{"id":"k8s_06","role":"engineering","question":"What are the main components of Kubernetes?","expected_doc_ids":["k8s-kubernetes-components-kubernetes"]}
+{"id":"k8s_07","role":"engineering","question":"What is the Kubernetes API?","expected_doc_ids":["k8s-the-kubernetes-api-kubernetes"]}
+{"id":"k8s_08","role":"engineering","question":"What does 'working with objects' mean in Kubernetes?","expected_doc_ids":["k8s-objects-in-kubernetes-kubernetes"]}
+{"id":"k8s_09","role":"engineering","question":"What are object names and IDs in Kubernetes used for?","expected_doc_ids":["k8s-object-names-and-ids-kubernetes"]}
+{"id":"k8s_10","role":"engineering","question":"What is Kubernetes cluster architecture at a high level?","expected_doc_ids":["k8s-cluster-architecture-kubernetes"]}
