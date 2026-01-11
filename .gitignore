@@ -61,6 +61,7 @@ data/raw/
 
 # Vector DB / RAG artifacts (adjust to your stack)
 chroma/
+bm25/
 *.sqlite
 *.sqlite3
 *.db

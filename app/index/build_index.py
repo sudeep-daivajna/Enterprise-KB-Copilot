@@ -5,6 +5,8 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
+import re
+
 import chromadb
 import numpy as np
 from sentence_transformers import SentenceTransformer
@@ -14,6 +16,14 @@ ROOT = Path(__file__).resolve().parents[2]
 CHUNKS_PATH = ROOT / "data" / "processed" / "chunks.jsonl"
 CHROMA_DIR = ROOT / "data" / "chroma"
 COLLECTION_NAME = "enterprise_kb_copilot"
+
+BM25_DIR = ROOT / "data" / "bm25"
+BM25_CORPUS_PATH = BM25_DIR / "bm25_corpus.jsonl"
+
+_TOKEN_RE = re.compile(r"[a-z0-9_]+", re.IGNORECASE)
+
+def tokenize(text: str) -> List[str]:
+    return _TOKEN_RE.findall((text or "").lower())
 
 EMBED_MODEL = "intfloat/e5-small-v2"  # 384-dim, MIT
 BATCH_SIZE = 64
@@ -110,6 +120,26 @@ def main() -> None:
                 "access_level": role_list_to_access_level(c.get("access_roles", ["public"])),
             }
         )
+
+    # -----------------------
+    # Build BM25 corpus file
+    # -----------------------
+    BM25_DIR.mkdir(parents=True, exist_ok=True)
+    with BM25_CORPUS_PATH.open("w", encoding="utf-8") as f:
+        for cid, doc, md in zip(ids, docs, metas):
+            row = {
+                "chunk_id": cid,
+                "access_level": int(md.get("access_level", 0)),
+                "tokens": tokenize(doc),
+                "doc_title": md.get("doc_title", ""),
+                "source": md.get("source", ""),
+            }
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+    print(f"✅ BM25 corpus written: {BM25_CORPUS_PATH} (chunks={len(ids)})")
+    if ids:
+        print(f"BM25 preview: {ids[0]} tokens={len(tokenize(docs[0]))}")
+
 
     # Batch upserts
     for start in tqdm(range(0, len(ids), BATCH_SIZE), desc="Indexing"):
