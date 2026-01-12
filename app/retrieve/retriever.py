@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 import json 
 import re
 from  rank_bm25 import BM25Okapi
+from hashlib import sha256
 
 import chromadb
 import numpy as np
@@ -33,6 +34,11 @@ BM25_CORPUS_PATH = ROOT / "data" / "bm25" / "bm25_corpus.jsonl"
 
 BM25_ENABLE = os.getenv("BM25_ENABLE", "1") == "1"
 BM25_CANDIDATES = int(os.getenv("BM25_CANDIDATES", "30"))
+
+RRF_ENABLE = os.getenv("RRF_ENABLE", "1") == "1"          # New: toggle RRF
+RRF_K = int(os.getenv("RRF_K", "60"))                     # Standard RRF k
+RERANK_TOP_M = int(os.getenv("RERANK_TOP_M", "50"))       # New: only rerank top M after RRF (speed)
+DEBUG_RETRIEVE = os.getenv("DEBUG_RETRIEVE", "1") == "1"  # New: gate all debug prints
 
 _TOKEN_RE = re.compile(r"[a-z0-9_]+", re.IGNORECASE)
 
@@ -213,40 +219,115 @@ class Retriever:
                         metadata=meta,
                     )
                 )
+        
+                # === Hybrid merge: vector candidates + BM25-only rescue ===
+        candidate_id_set = {c.chunk_id for c in candidates}
+        missing_bm25_ids = [cid for cid in bm25_ids if cid not in candidate_id_set]
 
+        if missing_bm25_ids:
+            fetched = self.collection.get(
+                ids=missing_bm25_ids,
+                include=["documents", "metadatas"],
+            )
+            f_ids = fetched.get("ids", [])
+            f_docs = fetched.get("documents", [])
+            f_metas = fetched.get("metadatas", [])
 
-        # Rerank candidates using cross-encoder
-        if self.reranker and candidates:
-            scores = self.reranker.score(question, [c.text for c in candidates])
-            for c, s in zip(candidates, scores):
+            for cid, doc, md in zip(f_ids, f_docs, f_metas):
+                title = (md.get("doc_title") if isinstance(md, dict) else "") or ""
+                source = (md.get("source") if isinstance(md, dict) else "") or ""
+                snippet = (doc[:300] + "...") if doc and len(doc) > 300 else (doc or "")
+
+                meta = dict(md or {})
+                meta["vector_distance"] = None
+                meta["from_vector"] = False
+                meta["from_bm25"] = True
+
+                candidates.append(
+                    RetrievedChunk(
+                        chunk_id=cid,
+                        title=title,
+                        source=source,
+                        snippet=snippet,
+                        text=doc or "",
+                        metadata=meta,
+                    )
+                )
+
+        # === Near-duplicate filtering (cheap hash-based) ===
+        from hashlib import sha256
+        import re
+
+        seen_hashes = set()
+        deduped_candidates: List[RetrievedChunk] = []
+        for c in candidates:
+            # Normalize text for hashing
+            norm_text = re.sub(r'\s+', ' ', c.text.lower().strip())
+            text_hash = sha256(norm_text.encode("utf-8")).hexdigest()
+            if text_hash not in seen_hashes:
+                seen_hashes.add(text_hash)
+                deduped_candidates.append(c)
+        candidates = deduped_candidates
+
+        # === RRF fusion (if enabled and BM25 contributed) ===
+        if RRF_ENABLE and bm25_ids:
+            # Vector ranks: from Chroma order (already sorted by relevance)
+            vector_ranks = {cid: i + 1 for i, cid in enumerate(ids)}
+
+            # BM25 ranks: from bm25_ids order
+            bm25_ranks = {cid: i + 1 for i, cid in enumerate(bm25_ids)}
+
+            for c in candidates:
+                vr = vector_ranks.get(c.chunk_id, 0)   # 0 if missing (no contribution)
+                br = bm25_ranks.get(c.chunk_id, 0)
+                rrf_score = (1.0 / (RRF_K + vr) if vr > 0 else 0.0) + (1.0 / (RRF_K + br) if br > 0 else 0.0)
+                c.metadata["rrf_score"] = float(rrf_score)
+
+            # Sort by RRF descending
+            candidates.sort(key=lambda c: c.metadata.get("rrf_score", 0.0), reverse=True)
+
+        # === Rerank only top M after RRF ===
+        rerank_pool = candidates[:RERANK_TOP_M]
+        if self.reranker and rerank_pool:
+            scores = self.reranker.score(question, [c.text for c in rerank_pool])
+            for c, s in zip(rerank_pool, scores):
                 c.metadata["rerank_score"] = float(s)
 
-            candidates.sort(
-                key=lambda c: c.metadata.get("rerank_score", -1e9),
+            # Final sort: reranked ones first (by rerank score), then rest by RRF
+            candidates = sorted(
+                candidates,
+                key=lambda c: c.metadata.get("rerank_score", c.metadata.get("rrf_score", -1e9)),
                 reverse=True,
             )
-        
-        # After candidates are built and (optionally) reranked/sorted
-        print("\n--- RETRIEVAL DEBUG ---")
-        print(f"question={question!r}")
-        print(f"top_k={top_k}  candidates={len(candidates)}  rerank={'ON' if self.reranker else 'OFF'}")
 
-        for i, c in enumerate(candidates[:10], start=1):
-            vd = c.metadata.get("vector_distance")
-            rs = c.metadata.get("rerank_score")
-            fv = c.metadata.get("from_vector")
-            fb = c.metadata.get("from_bm25")
-            print(f"{i:02d}. {c.chunk_id} vec_dist={vd} rerank={rs} v={fv} b={fb} title={c.title}")
+        # === Debug output (gated) ===
+        if DEBUG_RETRIEVE:
+            print("\n--- RETRIEVAL DEBUG ---")
+            print(f"question={question!r}")
+            print(f"rewritten={rewritten!r}")
+            print(f"user_role={user_role} level={user_level}")
+            print(f"candidates after merge/dedupe={len(candidates)} "
+                  f"rerank_pool={len(rerank_pool)} top_k={top_k}")
+            print(f"knobs: BM25={BM25_ENABLE} RRF={RRF_ENABLE} RERANK={bool(self.reranker)}")
 
-        v_only = [c for c in candidates if c.metadata.get("from_vector") and not c.metadata.get("from_bm25")]
-        b_only = [c for c in candidates if c.metadata.get("from_bm25") and not c.metadata.get("from_vector")]
-        both   = [c for c in candidates if c.metadata.get("from_vector") and c.metadata.get("from_bm25")]
+            for i, c in enumerate(candidates[:15], start=1):  # Show top 15
+                vd = c.metadata.get("vector_distance")
+                rs = c.metadata.get("rerank_score")
+                rrf = c.metadata.get("rrf_score")
+                fv = c.metadata.get("from_vector")
+                fb = c.metadata.get("from_bm25")
+                print(
+                    f"{i:02d}. {c.chunk_id[:50]} "
+                    f"vec_dist={(f'{vd:.4f}' if vd is not None else 'None')} "
+                    f"rrf={(f'{rrf:.4f}' if rrf is not None else 'None')} "
+                    f"rerank={(f'{rs:.4f}' if rs is not None else 'None')} "
+                    f"v={fv} b={fb} title={c.title[:60]}"
+                )
 
-        print(f"counts: v_only={len(v_only)} b_only={len(b_only)} both={len(both)} total={len(candidates)}")
 
-        print("\nBM25-only (first 10):")
-        for c in b_only[:10]:
-            print(f"- {c.chunk_id} title={c.title}")
-
+            v_only = sum(1 for c in candidates if c.metadata.get("from_vector") and not c.metadata.get("from_bm25"))
+            b_only = sum(1 for c in candidates if c.metadata.get("from_bm25") and not c.metadata.get("from_vector"))
+            both = sum(1 for c in candidates if c.metadata.get("from_vector") and c.metadata.get("from_bm25"))
+            print(f"Hybrid breakdown → v_only={v_only} b_only={b_only} both={both} total={len(candidates)}")
 
         return candidates[:top_k]
