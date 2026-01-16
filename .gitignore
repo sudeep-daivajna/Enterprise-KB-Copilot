@@ -11,6 +11,7 @@ __pycache__/
 htmlcov/
 *.log
 
+ingest/
 # Virtual environments
 .venv/
 venv/

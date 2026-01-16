@@ -19,6 +19,7 @@ K8S_URLS = [
     "https://kubernetes.io/docs/concepts/overview/working-with-objects/names/",
     "https://kubernetes.io/docs/concepts/overview/kubernetes-api/",
     "https://kubernetes.io/docs/concepts/services-networking/service/",
+    "https://kubernetes.io/docs/concepts/workloads/pods/",
 ]
 
 ROOT = Path(__file__).resolve().parents[2]  # repo root
