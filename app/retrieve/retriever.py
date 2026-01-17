@@ -24,17 +24,17 @@ VECTOR_ENABLE = os.getenv("VECTOR_ENABLE", "1") == "1"
 BM25_ENABLE = os.getenv("BM25_ENABLE", "1") == "1"
 BM25_CANDIDATES = int(os.getenv("BM25_CANDIDATES", "30"))
 
-RRF_ENABLE = os.getenv("RRF_ENABLE", "0") == "1"
+RRF_ENABLE = os.getenv("RRF_ENABLE", "1") == "1"
 RRF_K = int(os.getenv("RRF_K", "60"))
 
-RERANK_ENABLE = os.getenv("RERANK_ENABLE", "0") == "1"
+RERANK_ENABLE = os.getenv("RERANK_ENABLE", "1") == "1"
 RERANK_CANDIDATES = int(os.getenv("RERANK_CANDIDATES", "30"))
 RERANK_TOP_M = int(os.getenv("RERANK_TOP_M", "50"))
 
 MAX_DISTANCE = float(os.getenv("MAX_DISTANCE", "0.2"))
 RETRIEVE_CANDIDATES = int(os.getenv("RETRIEVE_CANDIDATES", str(RERANK_CANDIDATES)))
 
-DEBUG_RETRIEVE = os.getenv("DEBUG_RETRIEVE", "0") == "1"
+DEBUG_RETRIEVE = os.getenv("DEBUG_RETRIEVE", "1") == "1"
 
 # -----------------------
 # Paths / models
@@ -78,6 +78,12 @@ class RetrievedChunk:
 class Retriever:
     def __init__(self) -> None:
         # Always keep Chroma available because we may need to fetch BM25 hits by chunk_id.
+
+        print("ENV VECTOR_ENABLE =", os.getenv("VECTOR_ENABLE"))
+        print("ENV BM25_ENABLE =", os.getenv("BM25_ENABLE"))
+        print("ENV RERANK_ENABLE =", os.getenv("RERANK_ENABLE"))
+        print("ENV RRF_ENABLE =", os.getenv("RRF_ENABLE"))
+
         self.client = chromadb.PersistentClient(path=str(CHROMA_DIR))
         self.collection = self.client.get_or_create_collection(
             name=COLLECTION_NAME,
