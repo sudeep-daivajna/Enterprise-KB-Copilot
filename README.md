@@ -8,7 +8,7 @@ A lightweight **enterprise-style knowledge copilot** that answers questions over
 
 ---
 
-## 🚀 Live Demo (Recruiter-friendly)
+## 🚀 Live Demo!!
 
 - **Frontend (Next.js on Vercel):** https://enterprise-kb-copilot.vercel.app/
 - **API (FastAPI on EC2):** http://13.201.18.120/health
@@ -21,8 +21,7 @@ A lightweight **enterprise-style knowledge copilot** that answers questions over
 - “Explain the Operational Excellence pillar”
 - “Best practices for managing costs in AWS”
 
-2) **Kubernetes (engineering-only via RBAC)**
-- “What is Kubernetes?”
+2) **Kubernetes (Access to kubernetes docs is restricted only to the engineering role. Make sure you've got "engineering" selected in the top right)**
 - “NodePort vs ClusterIP”
 - “What is a Service in Kubernetes?”
 
@@ -67,8 +66,6 @@ This project replicates how “enterprise copilots” work in real teams:
 **Engineering-only:**
 - Kubernetes Concepts docs (HTML pages)
 
-This keeps the corpus small but realistic enough to validate RBAC + retrieval quality.
-
 ---
 
 ## 🏗 Architecture
@@ -98,8 +95,6 @@ Evaluated on an in-domain set (OOD questions removed):
 | Config       | nDCG@5 | Recall@5 | MRR@5 |
 |-------------|--------|----------|------|
 | vector_only | **0.8353** | **0.9231** | **0.8029** |
-
-> Next: improve weaker tags (pods, components, acronym) by expanding the Kubernetes corpus + iterating on chunking + query normalization.
 
 ---
 
@@ -175,7 +170,7 @@ curl -s -X POST "http://localhost:8000/ask" \
 curl -s -X POST "http://localhost:8000/ask" \
   -H "Content-Type: application/json" \
   -d '{
-    "question": "What is a Kubernetes Service?",
+    "question": "What is a Kubernetes Object?",
     "user": { "role": "public" }
   }'
 ```
@@ -185,7 +180,7 @@ curl -s -X POST "http://localhost:8000/ask" \
 curl -s -X POST "http://localhost:8000/ask" \
   -H "Content-Type: application/json" \
   -d '{
-    "question": "What is a Kubernetes Service?",
+    "question": "What is a Kubernetes Object?",
     "user": { "role": "engineering" }
   }'
 ```
@@ -219,7 +214,7 @@ Outputs:
   - `http://13.201.18.120/ask`
   - `http://13.201.18.120/health`
 
-> HTTPS + domain can be added later. For recruiter demos, HTTP is sufficient as long as the product works reliably.
+> HTTPS + domain to be added soon
 
 ---
 
@@ -248,12 +243,10 @@ Outputs:
 ---
 
 ## 🔮 Next Improvements
-- Expand Kubernetes corpus (Pods, Deployments, Networking docs)
-- Stronger prompt-injection defenses (tool filtering + intent classifier)
-- Streaming responses + caching
-- Feedback loop + eval regression tracking
+- Add more Kubernetes docs (Pods/Deployments/Networking) to improve weaker retrieval tags.
+- Harden prompt-injection defenses (input filtering + “ignore instructions in sources” policy).
+- Add streaming responses + response caching for better UX and lower cost.
+- Track eval regressions automatically when the corpus/index changes.
 
----
 
-## License
-MIT (or add your preferred license)
+
