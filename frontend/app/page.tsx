@@ -12,6 +12,18 @@ function uid() {
   return Math.random().toString(16).slice(2);
 }
 
+// Backend sometimes appends a line like: "Citations: [1], [2]".
+// We keep inline [1] markers inside the answer, but remove this UI-noise line.
+function stripCitationsLine(answer: string) {
+  const lines = answer.split("\n");
+  const cleaned = lines.filter((line) => {
+    const t = line.trim();
+    // Matches: Citations: [1]  OR  Citations: [1], [2], [3]
+    return !/^Citations:\s*(\[\d+\])(\s*,\s*\[\d+\])*\s*$/i.test(t);
+  });
+  return cleaned.join("\n").trimEnd();
+}
+
 export default function Home() {
   const [role, setRole] = useState<Role>("engineering");
   const [input, setInput] = useState("");
@@ -22,7 +34,7 @@ export default function Home() {
       id: uid(),
       role: "assistant",
       content:
-        "Ask me anything about AWS Well-Architected or Kubernetes docs.\n\nExample: **NodePort vs ClusterIP**",
+        "Ask me anything about AWS Well-Architected or Kubernetes docs.\n\nExample: \n**What are kubernetes objects?** , **What are the 6 pillars of AWS?** \n\n (Kubernetes docs are only available for engineering role, make sure you select it from the role dropdown above!)",
     },
   ]);
 
@@ -76,7 +88,8 @@ export default function Home() {
       }
 
       // ✅ data is AskResponse here
-      const full = "answer" in data ? data.answer : "";
+      const fullRaw = "answer" in data ? data.answer : "";
+      const full = stripCitationsLine(fullRaw);
       const srcs = "sources" in data ? data.sources : [];
 
       // Fake-stream (typewriter) the answer
@@ -223,11 +236,6 @@ export default function Home() {
           >
             {loading ? "..." : "Send"}
           </button>
-        </div>
-
-        <div className="mt-2 text-xs text-gray-500">
-          Tip: Try <span className="text-gray-300">“NodePort vs ClusterIP”</span>{" "}
-          or <span className="text-gray-300">“What are the 6 AWS pillars?”</span>
         </div>
       </section>
     </main>
